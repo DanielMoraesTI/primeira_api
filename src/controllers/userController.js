@@ -31,11 +31,11 @@ export const deleteUser = (req, res) => {
   const id = parseInt(req.params.id)
   const user = userService.deleteUser(id)
   
-  if (user) {
-    res.js.error) {
+  if (user.error) {
     return res.status(404).json(user)
   }
   res.json({ message: "Usuário deletado com sucesso", user })
+}
 
 export const getUserStats = (req, res) => {
   const stats = userService.getUserStats()
