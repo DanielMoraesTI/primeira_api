@@ -9,7 +9,7 @@ export const createTag = (req, res) => {
   const { name } = req.body;
   
   if (!name) {
-    return res.status(400).json({ error: 'O Nome da TAG deve ser infomado' });
+    return res.status(400).json({ error: 'O Nome da TAG deve ser informado' });
   }
   
   const tag = tagService.createTag({ name });
@@ -26,7 +26,7 @@ export const updateTag = (req, res) => {
   const { name } = req.body;
   
   if (!name) {
-    return res.status(400).json({ error: 'O Nome da TAG deve ser infomado' });
+    return res.status(400).json({ error: 'O Nome da TAG deve ser informado' });
   }
   
   const tag = tagService.updateTag(id, { name });

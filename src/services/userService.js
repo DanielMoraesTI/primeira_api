@@ -76,7 +76,7 @@ export const updateUser = (id, data) => {
   return users[index]
 }
 
-// Função para deletar um usuário. Verifica se o usuário existe antes de deletar e retorna o usuário deletado ou null se não encontrado.
+// Função para deletar um usuário. Verifica se o usuário existe antes de deletar e retorna o usuário deletado ou um erro se não encontrado.
 export const deleteUser = (id) => {
   const index = users.findIndex(u => u.id === id)
   
@@ -84,7 +84,7 @@ export const deleteUser = (id) => {
     const deletedUser = users.splice(index, 1)
     return deletedUser[0]
   }
-  return null
+  return { error: "Usuário não encontrado" }
 }
 
 // Função que alterara o status do usuário entre ativo e inativo.

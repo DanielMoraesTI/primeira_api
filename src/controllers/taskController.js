@@ -29,10 +29,10 @@ export const updateTask = (req, res) => {
 export const deleteTask = (req, res) => {
   const id = parseInt(req.params.id);
   const deletedTask = taskService.deleteTask(id);
-    if (!deletedTask) {
-    return res.status(404).json({ error: 'A Tarefa não foi encontrada' });
-    }
-    res.json(deletedTask);
+  if (deletedTask.error) {
+    return res.status(404).json(deletedTask);
+  }
+  res.json(deletedTask);
 }
 
 export const getTaskStats = (req, res) => {

@@ -85,55 +85,8 @@ export const getTaskStats = () => {
   }
 }
 
-// COMENTÁRIOS
-// Função para obter os comentários de uma tarefa específica. Verifica se a tarefa existe antes de retornar os comentários ou um erro se não encontrada.
-export const getTaskComments = (taskId) => {
-  const task = tasks.find(t => t.id === taskId)
-  
-  if (!task) {
-    return { error: "A Tarefa não foi encontrada" }
-  }
-  
-  return task.comments || []
-}
-// Função para criar um comentário em uma tarefa específica. Verifica se a tarefa existe antes de criar o comentário ou retorna um erro se não encontrada.
-export const createTaskComment = (taskId, commentData) => {
-  const task = tasks.find(t => t.id === taskId)
-  
-  if (!task) {
-    return { error: "A Tarefa não foi encontrada" }
-  }
-  // Gerar ID automático para o comentário, com base no maior ID existente na lista de comentários da tarefa (Math.max) ou 1 se a lista estiver vazia.
-  const commentId = task.comments.length > 0 ? Math.max(...task.comments.map(c => c.id)) + 1 : 1
-  
-  const newComment = {
-    id: commentId,
-    taskId: taskId,
-    text: commentData.text,
-    author: commentData.author,
-    data: new Date().toISOString().split('T')[0]
-  }
-  
-  task.comments.push(newComment)
-  return newComment
-}
-// Função para deletar um comentário de uma tarefa específica. Verifica se a tarefa e o comentário existem antes de deletar ou retorna um erro se não encontrados.
-export const deleteTaskComment = (taskId, commentId) => {
-  const task = tasks.find(t => t.id === taskId)
-  
-  if (!task) {
-    return { error: "A Tarefa não foi encontrada" }
-  }
-  
-  const commentIndex = task.comments.findIndex(c => c.id === commentId)
-  
-  if (commentIndex === -1) {
-    return { error: "O Comentário não foi encontrado" }
-  }
-  
-  const deletedComment = task.comments.splice(commentIndex, 1)
-  return deletedComment[0]
-}
+// Comentários são gerenciados por commentService.js
+// Este arquivo se concentra exclusivamente em tarefas e suas tags associadas
 
 // TAGS
 // Função para obter as tags associadas a uma tarefa específica. Verifica se a tarefa existe antes de retornar as tags ou um erro se não encontrada.
