@@ -11,10 +11,9 @@ export const createUser = (req, res) => {
   const user = userService.createUser(req.body)
   
   if (user.error) {
-    res.status(400).json(user)
-  } else {
-    res.status(201).json(user)
+    return res.status(400).json(user)
   }
+  res.status(201).json(user)
 }
 
 export const updateUser = (req, res) => {
@@ -47,8 +46,7 @@ export const toggleUserStatus = (req, res) => {
   const user = userService.toggleUserStatus(id)
   
   if (user.error) {
-    res.status(404).json(user)
-  } else {
-    res.json(user)
+    return res.status(404).json(user)
   }
+  res.json(user)
 }
