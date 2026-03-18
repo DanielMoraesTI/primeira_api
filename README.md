@@ -5,6 +5,7 @@ Uma API REST desenvolvida com **Node.js** e **Express** para gerenciar tarefas, 
 ## 👤 Autor
 
 **Daniel Moraes**
+**218 (Identificação UpSkill)**
 
 ## 🔗 Repositório
 
