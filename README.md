@@ -18,6 +18,7 @@ https://github.com/DanielMoraesTI/primeira_api.git
 ### Pré-requisitos
 - Node.js instalado (versão 16 ou superior)
 - npm ou yarn
+- MySQL Server instalado (versão 5.7 ou superior)
 
 ### Passos para Instalar e Rodar
 
@@ -32,17 +33,30 @@ https://github.com/DanielMoraesTI/primeira_api.git
    npm install
    ```
 
-3. **Inicie o servidor:**
+3. **Configure o banco de dados MySQL:**
+   - Crie um banco de dados chamado `primeira_api`
+   - Execute as queries SQL para criar as tabelas
+   - Insira os dados de teste (veja as queries em SCHEMA_MYSQL.sql no seu computador local)
+
+4. **Configure as variáveis de ambiente** (arquivo `.env`):
+   ```env
+   DB_HOST=localhost
+   DB_USER=root
+   DB_PASSWORD=sua_senha
+   DB_NAME=primeira_api
+   DB_PORT=3306
+   PORT=3000
+   ```
+
+5. **Inicie o servidor:**
    ```bash
    npm start
    ```
 
-4. **Acesse a API:**
+6. **Acesse a API:**
    ```
    http://localhost:3000
    ```
-
-O servidor estará rodando na porta 3000 e exibirá mensagem de confirmação no console.
 
 ---
 
@@ -125,45 +139,13 @@ O servidor estará rodando na porta 3000 e exibirá mensagem de confirmação no
 
 ---
 
-## 📦 Alterações Recentes (Branch: Exercícios-de-Backend-—-Migração-para-MySQL---Exercícios-Guiados-5)
-
-### ✅ Atualizações Implementadas
-
-1. **Padronização de Nomenclatura**
-   - `tarefas` → `tasks`
-   - `usuarios` → `users`
-   - Mantém consistência em todo o projeto
-
-2. **Implementação de Funções de Tags em Tarefas**
-   - `getTaskTags(taskId)` - Obtém tags associadas a uma tarefa
-   - `addTagToTask(taskId, tagId)` - Associa uma tag a uma tarefa
-   - `removeTagFromTask(taskId, tagId)` - Remove uma tag de uma tarefa
-
-3. **Alinhamento com Especificações do Projeto**
-
-4. **Validações Aprimoradas**
-   - Verificação de duplicação em associações tag-tarefa
-   - Validação de existência de recursos antes de operações
-   - Mensagens de erro consistentes e descritivas
-
-### 🔄 Como Usar a Nova Branch
-
-```bash
-git checkout refactor/mysql-standardization
-npm install
-npm start
-```
-
----
-
----
-
 ## 🏗️ Estrutura do Projeto
 
 ```
 Primeira_API/
 ├── src/
 │   ├── app.js                      # Servidor Express principal
+│   ├── db.js                       # Pool de conexão MySQL
 │   ├── controllers/
 │   │   ├── userController.js       # Lógica de API de usuários
 │   │   ├── taskController.js       # Lógica de API de tarefas
@@ -178,43 +160,62 @@ Primeira_API/
 │   │   ├── taskRoutes.js           # Endpoints de tarefas
 │   │   └── tagRoutes.js            # Endpoints de tags
 │   └── middlewares/
-│       ├── checkUserExists.js      # Validação de existência do usuário
-│       └── loggerMiddleware.js     # Log de requisições HTTP
+│       ├── checkUserExists.js      # Validação de usuário
+│       └── loggerMiddleware.js     # Log de requisições
 ├── package.json
+├── .env                            # Variáveis de ambiente
 └── README.md
 ```
 
-## ✨ Características
+---
 
-- ✅ Validação de dados (email, duplicação, campos obrigatórios)
-- ✅ Tratamento de erros padronizado e consistente
-- ✅ Busca e ordenação de dados
-- ✅ Relacionamentos entre recursos (Tarefas ↔ Tags ↔ Comentários)
-- ✅ Middleware de logging de requisições
-- ✅ Geração automática de IDs únicos
+## 📝 Exemplos Rápidos
 
-## 📝 Exemplo de Uso
-
-**Criar usuário:**
+### Listar Usuários
 ```bash
-POST http://localhost:3000/users
+GET http://localhost:3000/users
+```
+
+### Criar Tarefa
+```bash
+POST http://localhost:3000/tasks
 Content-Type: application/json
 
 {
-  "name": "João Silva",
-  "email": "joao@gmail.com"
+  "title": "Nova tarefa",
+  "categoria": "Trabalho",
+  "user_id": 1
 }
 ```
 
-**Resposta:**
-```json
+### Adicionar Comentário em Tarefa
+```bash
+POST http://localhost:3000/tasks/1/comments
+Content-Type: application/json
+
 {
-  "id": 8,
-  "name": "João Silva",
-  "email": "joao@gmail.com",
-  "ativo": true
+  "userId": 2,
+  "conteudo": "Comentário sobre a tarefa"
 }
 ```
+
+### Associar Tag a Tarefa
+```bash
+POST http://localhost:3000/tasks/1/tags
+Content-Type: application/json
+
+{
+  "tagId": 3
+}
+```
+
+### Obter Estatísticas
+```bash
+GET http://localhost:3000/users/stats
+GET http://localhost:3000/tasks/stats
+```
+
+---
 
 ## 📚 Conceitos Utilizados
 
@@ -223,6 +224,8 @@ Content-Type: application/json
 - **Middlewares** - Processamento de requisições
 - **HTTP Status Codes** - 200, 201, 400, 404, etc
 - **JSON** - Formato de dados
+- **MySQL** - Banco de dados relacional
+- **Relacionamentos** - 1:N (tarefas → usuários) e N:N (tarefas ↔ tags)
 
 ---
 
