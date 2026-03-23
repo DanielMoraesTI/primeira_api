@@ -2,121 +2,176 @@ import * as taskService from '../services/taskService.js';
 import * as commentService from '../services/commentService.js';
 // Controlador responsável apenas por lidar com as requisições e respostas sobre tarefas e, comentários e TAGS vinculadas a alguma tarefa, delegando a lógica de negócios para o service.
 
-export const getAllTasks = (req, res) => {
-  const { search = '', sort = '' } = req.query
-  const tasks = taskService.getAllTasks(search, sort);
-  res.json(tasks);
-}
-
-export const createTask = (req, res) => {
-  const { title } = req.body;
-  if (!title) {
-    return res.status(400).json({ error: 'Título da tarefa é obrigatório' });
+export const getAllTasks = async (req, res) => {
+  try {
+    const { search = '', sort = '' } = req.query;
+    // O await é para aguardar resposta do service, que pode ser uma operação assíncrona (ex: consulta a banco de dados)
+    const tasks = await taskService.getAllTasks({ search, sort });
+    res.json(tasks);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao buscar tarefas' });
   }
-  const newTask = taskService.createTask(req.body);
-  res.status(201).json(newTask);
-}
+};
 
-export const updateTask = (req, res) => {
-  const id = parseInt(req.params.id);
-  const updatedTask = taskService.updateTask(id, req.body);
-  if (updatedTask.error) {
-    return res.status(404).json(updatedTask);
+export const createTask = async (req, res) => {
+  try {
+    const { title } = req.body;
+    if (!title) {
+      return res.status(400).json({ error: 'O título da tarefa é obrigatório' });
+    }
+    // O await é para aguardar resposta do service, que pode ser uma operação assíncrona (ex: consulta a banco de dados)
+    const newTask = await taskService.createTask(req.body);
+    if (newTask.error) {
+      return res.status(400).json(newTask);
+    }
+    res.status(201).json(newTask);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao criar tarefa' });
   }
-  res.json(updatedTask);
-}
+};
 
-export const deleteTask = (req, res) => {
-  const id = parseInt(req.params.id);
-  const deletedTask = taskService.deleteTask(id);
-  if (deletedTask.error) {
-    return res.status(404).json(deletedTask);
+export const updateTask = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const updatedTask = await taskService.updateTask(id, req.body);
+    if (updatedTask.error) {
+      return res.status(404).json(updatedTask);
+    }
+    res.json(updatedTask);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao atualizar tarefa' });
   }
-  res.json(deletedTask);
-}
+};
 
-export const getTaskStats = (req, res) => {
-  const stats = taskService.getTaskStats();
-  res.json(stats);
-}
+export const deleteTask = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const deletedTask = await taskService.deleteTask(id);
+    if (deletedTask.error) {
+      return res.status(404).json(deletedTask);
+    }
+    res.json({ message: "Tarefa deletada com sucesso", task: deletedTask });
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao deletar tarefa' });
+  }
+};
+
+export const getTaskStats = async (req, res) => {
+  try {
+    const stats = await taskService.getTaskStats();
+    res.json(stats);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao obter estatísticas de tarefas' });
+  }
+};
 
 // COMENTÁRIOS
 
-export const getTaskComments = (req, res) => {
-  const taskId = parseInt(req.params.id);
-  const comments = commentService.getCommentsByTask(taskId);
-  
-  if (comments.error) {
-    return res.status(404).json(comments);
+export const getTaskComments = async (req, res) => {
+  try {
+    const taskId = parseInt(req.params.id);
+    const comments = await commentService.getCommentsByTask(taskId);
+    if (comments.error) {
+      return res.status(404).json(comments);
+    }
+    res.json(comments);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao buscar comentários da tarefa' });
   }
-  res.json(comments);
-}
+};
 
-export const createTaskComment = (req, res) => {
-  const taskId = parseInt(req.params.id);
-  const { userId, conteudo } = req.body;
-  
-  if (!userId || !conteudo) {
-    return res.status(400).json({ error: 'ID do Usuário e conteúdo são obrigatórios' });
+export const createTaskComment = async (req, res) => {
+  try {
+    const taskId = parseInt(req.params.id);
+    const { userId, conteudo } = req.body;
+    if (!userId || !conteudo) {
+      return res.status(400).json({ error: 'O ID de usuário e texto do comentário são obrigatórios' });
+    }
+    const newComment = await commentService.createComment(taskId, userId, req.body);
+    if (newComment.error) {
+      return res.status(400).json(newComment);
+    }
+    // Retorna status 201 (Created) e o comentário criado
+    res.status(201).json(newComment);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao criar comentário para a tarefa' });
   }
-  
-  const comment = commentService.createComment(taskId, userId, { conteudo });
-  
-  if (comment.error) {
-    return res.status(404).json(comment);
-  }
-  
-  res.status(201).json(comment);
-}
+};
 
-export const deleteTaskComment = (req, res) => {
-  const commentId = parseInt(req.params.commentId);
-  
-  const result = commentService.deleteComment(commentId);
-  
-  if (result.error) {
-    return res.status(404).json(result);
+export const deleteTaskComment = async (req, res) => {
+  try {
+    const commentId = parseInt(req.params.commentId);
+
+    const deletedComment = await commentService.deleteComment(commentId);
+
+    if (deletedComment.error) {
+      return res.status(404).json(deletedComment);
+    }
+    // Retorna mensagem de sucesso e o comentário deletado
+    res.json({ message: "Comentário deletado com sucesso", comment: deletedComment });
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao deletar comentário da tarefa' });
   }
-  
-  res.json(result);
-}
+};
+
+export const updateTaskComment = async (req, res) => {
+  try {
+    const commentId = parseInt(req.params.commentId);
+    const { conteudo } = req.body;
+    if (!conteudo) {
+      return res.status(400).json({ error: 'O texto do comentário é obrigatório' });
+    }
+    const updatedComment = await commentService.updateComment(commentId, req.body);
+    if (updatedComment.error) {
+      return res.status(404).json(updatedComment);
+    }
+    res.json(updatedComment);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao atualizar comentário da tarefa' });
+  }
+};
 
 // TAGS
 
-export const getTaskTags = (req, res) => {
-  const taskId = parseInt(req.params.id);
-  const tags = taskService.getTaskTags(taskId);
-  
-  if (tags.error) {
-    return res.status(404).json(tags);
+export const getTaskTags = async (req, res) => {
+  try {
+    const taskId = parseInt(req.params.id);
+    const tags = await taskService.getTaskTags(taskId);
+    if (tags.error) {
+      return res.status(404).json(tags);
+    }
+    res.json(tags);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao buscar tags da tarefa' });
   }
-  res.json(tags);
-}
+};
 
-export const addTagToTask = (req, res) => {
-  const taskId = parseInt(req.params.id);
-  const { tagId } = req.body;
-  
-  if (!tagId) {
-    return res.status(400).json({ error: 'O ID da TAG deve ser informado' });
+export const addTagToTask = async (req, res) => {
+  try {
+    const taskId = parseInt(req.params.id);
+    const tagId = parseInt(req.params.tagId);
+    const result = await taskService.addTagToTask(taskId, tagId);
+    if (result.error) {
+      return res.status(404).json(result);
+    }
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao adicionar tag à tarefa' });
   }
-  
-  const result = taskService.addTagToTask(taskId, tagId);
-  
-  if (result.error) {
-    return res.status(404).json(result);
-  }
-  res.status(201).json(result);
-}
+};
 
-export const removeTagFromTask = (req, res) => {
-  const taskId = parseInt(req.params.id);
-  const tagId = parseInt(req.params.tagId);
-  
-  const result = taskService.removeTagFromTask(taskId, tagId);
-  
-  if (result.error) {
-    return res.status(404).json(result);
+export const removeTagFromTask = async (req, res) => {
+  try {
+    const taskId = parseInt(req.params.id);
+    const tagId = parseInt(req.params.tagId);
+
+    const result = await taskService.removeTagFromTask(taskId, tagId);
+
+    if (result.error) {
+      return res.status(404).json(result);
+    }
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao remover tag da tarefa' });
   }
-  res.json(result);
-}
+};

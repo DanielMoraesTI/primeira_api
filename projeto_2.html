@@ -1,0 +1,150 @@
+<html>
+
+<head>
+    <style>
+        body {
+            color: black;
+            font-family: Arial;
+            line-height: 1.6;
+        }
+
+        h1 {
+            color: #006600;
+        }
+
+        h2 {
+            color: #003366;
+        }
+
+        hr {
+            margin: 20px 0;
+        }
+
+        pre {
+            background-color: #f0f0f0;
+            padding: 10px;
+        }
+
+        b {
+            background-color: #f0f0f0;
+            padding: 2px 4px;
+        }
+
+        i {
+            color: #555;
+        }
+    </style>
+</head>
+
+<body>
+
+<h1>💡 Projeto 1 — API Completa com MySQL</h1>
+
+<ul>
+<li>O objetivo deste projeto é criar uma API completa para gerenciamento de tarefas, incluindo utilizadores, tarefas, tags e comentários.</li>
+<li>Todos os endpoints desenvolvidos em aula devem agora ser ligados a uma <b>base de dados MySQL</b>.</li>
+<li>Usar Node.js com Express e JSON nas respostas.</li>
+<li><b>Não usar arrays em memória</b> — todos os dados devem ser persistidos na base de dados.</li>
+<li>Validações e lógica de negócio devem ser feitas nos <b>services</b>, controllers apenas retornam JSON.</li>
+<li>IDs devem ser gerados automaticamente pela base de dados (<b>AUTO_INCREMENT</b>).</li>
+</ul>
+
+<hr>
+
+<h2>📁 Estrutura final do projeto</h2>
+
+<pre>
+src/
+  controllers/
+    userController.js
+    taskController.js        <-- também trata /tasks/:id/comments e /tasks/:id/tags
+    tagController.js
+  services/
+    userService.js
+    taskService.js
+    tagService.js
+    commentService.js
+  routes/
+    userRoutes.js
+    taskRoutes.js
+    tagRoutes.js
+  middlewares/
+    checkUserExists.js
+  db.js
+  app.js
+</pre>
+
+<p><i>Observação:</i> Os services são responsáveis por executar queries SQL na base de dados.</p>
+
+<hr>
+
+<h2>📡 Endpoints da API (Todos com MySQL)</h2>
+
+<h3>👤 Users</h3>
+
+<pre>
+GET /users
+POST /users
+PUT /users/:id
+PATCH /users/:id
+DELETE /users/:id
+GET /users?sort=asc|desc
+GET /users?search=nome
+GET /users/stats
+</pre>
+
+<hr>
+
+<h3>📋 Tasks</h3>
+
+<pre>
+GET /tasks
+POST /tasks
+PUT /tasks/:id
+DELETE /tasks/:id
+GET /tasks?sort=asc|desc
+GET /tasks?search=titulo
+GET /tasks/stats
+GET /users/:id/tasks
+</pre>
+
+<hr>
+
+<h3>🏷️ Tags</h3>
+
+<pre>
+GET /tags
+POST /tags
+DELETE /tags/:id
+GET /tags/:id/tasks
+POST /tasks/:id/tags
+</pre>
+
+<hr>
+
+<h3>💬 Comments</h3>
+
+<pre>
+POST /tasks/:id/comments
+GET /tasks/:id/comments
+PUT /tasks/:id/comments/:commentId
+DELETE /tasks/:id/comments/:commentId
+</pre>
+
+<hr>
+
+<h2>🎯 Objetivos do projeto</h2>
+
+<p>
+✔ Migrar API de memória para MySQL<br>
+✔ Trabalhar com queries SQL reais<br>
+✔ Usar <b>async/await</b> com base de dados<br>
+✔ Utilizar <b>insertId</b> e <b>affectedRows</b><br>
+✔ Trabalhar relações 1:N (comentários → tarefas)<br>
+✔ Trabalhar relações N:N (tags ↔ tarefas)<br>
+✔ Preparar a aplicação para contexto real
+</p>
+
+</body>
+
+</html>

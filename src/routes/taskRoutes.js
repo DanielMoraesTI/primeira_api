@@ -10,10 +10,10 @@ router.post('/', taskController.createTask);
 // COMENTÁRIOS
 router.get('/:id/comments', taskController.getTaskComments);
 router.post('/:id/comments', taskController.createTaskComment);
+router.put('/:id/comments/:commentId', taskController.updateTaskComment);
 router.delete('/:id/comments/:commentId', taskController.deleteTaskComment);
 
 // TAGS
-router.get('/:id/tags', taskController.getTaskTags);
 router.post('/:id/tags', taskController.addTagToTask);
 router.delete('/:id/tags/:tagId', taskController.removeTagFromTask);
 

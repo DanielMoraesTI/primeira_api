@@ -1,116 +1,224 @@
-let users = [
-  { id: 1, name: "Daniel Moraes", email: "daniel@gmail.com", ativo: true },
-  { id: 2, name: "Tais Dias", email: "tais@gmail.com", ativo: true },
-  { id: 3, name: "Natalia", email: "natalia@gmail.com", ativo: true },
-  { id: 4, name: "Leonor", email: "leonor@gmail.com", ativo: false },
-  { id: 5, name: "Tiago", email: "tiago@gmail.com", ativo: true },
-  { id: 6, name: "Danilo", email: "danilo@gmail.com", ativo: true },
-  { id: 7, name: "Sarah", email: "sarah@gmail.com", ativo: false }
-]
+import { db } from '../db.js';
 
-// Função para obter todos os usuários ou, se for fornecido o search, filtrar por nome. Se for fornecido o sort, ordenar por nome.
-export const getAllUsers = (search = '', sort = '') => {
-  let filtered = users
-  
-  // Filtrar por search se fornecido
-  if (search) {
-    filtered = filtered.filter(u => 
-      u.name.toLowerCase().includes(search.toLowerCase())
-    )
-  }
-  
-  // Ordenar por nome se sort for fornecido
-  if (sort === 'asc') {
-    filtered.sort((a, b) => a.name.localeCompare(b.name))
-  } else if (sort === 'desc') {
-    filtered.sort((a, b) => b.name.localeCompare(a.name))
-  }
-  
-  return filtered
-}
+// Função para obter todos os usuários.
+export const getAllUsers = async (search = '', sort = '') => {
+  try {
+    let query = 'SELECT * FROM users';
+    const params = [];
 
-// Função para criar um novo usuário. Nesta função verifica se o e-mail é válido ou se já existe antes de criar o usuário.
-export const createUser = (data) => {
-  if (!data.email || !data.email.includes("@")) {
-    return { error: "E-mail inválido, o e-mail deve seguir este modelo: nome@dominio.com" }
-  }
-
-  const emailExiste = users.some(u => u.email === data.email)
-  if (emailExiste) {
-    return { error: "E-mail já cadastrado" }
-  }
-  
-  // Gera novo ID automaticamente, para novo usuário, com base no maior ID existente (Math.max) ou 1 se a lista estiver vazia.
-  const newId = users.length > 0 ? Math.max(...users.map(u => u.id)) + 1 : 1
-  
-  const newUser = {
-    id: newId,
-    ...data,
-    ativo: true
-  }
-  
-  users.push(newUser)
-  return newUser
-}
-
-// Função para atualizar usuário existente. Verifica se o usuário existe, se o e-mail é válido e se o e-mail já existe para outro usuário antes de atualizar.
-export const updateUser = (id, data) => {
-  const index = users.findIndex(u => u.id === id)
-  
-  if (index === -1) {
-    return { error: "O Utilizador não  foi encontrado" }
-  }
-
-  if (data.email) {
-    if (!data.email.includes("@")) {
-      return { error: "E-mail inválido" }
+    // Se houver busca, adicionar cláusula WHERE para filtrar por nome usando LIKE.
+    if (search) {
+      query += ' WHERE name LIKE ?';
+      params.push(`%${search}%`);
     }
-    
-    const emailExiste = users.some(u => u.id !== id && u.email === data.email)
-    if (emailExiste) {
-      return { error: "E-mail já cadastrado" }
+    // Se houver ordenação, adicionar cláusula ORDER BY para ordenar por nome em ordem ascendente ou descendente.
+    if (sort === 'asc') {
+      query += ' ORDER BY name ASC';
+    } else if (sort === 'desc') {
+      query += ' ORDER BY name DESC';
     }
+    // Executar query no banco de dados usando db.query e retornar os usuários encontrados.
+    const [users] = await db.query(query, params);
+    return users;
+  } catch (error) {
+    console.error('Erro ao buscar usuários:', error);
+    throw error;
   }
+};
 
-  users[index] = { ...users[index], ...data } // Atualiza os dados do usuário existente com os novos dados fornecidos, mantendo o ID e o status ativo/inativo.
-  return users[index]
-}
+export const getUserById = async (id) => {
+    const [users] = await db.query(
+      'SELECT * FROM users WHERE id = ?',
+      [id]
+    );
+    return users;
+};
 
-// Função para deletar um usuário. Verifica se o usuário existe antes de deletar e retorna o usuário deletado ou um erro se não encontrado.
-export const deleteUser = (id) => {
-  const index = users.findIndex(u => u.id === id)
-  
-  if (index !== -1) {
-    const deletedUser = users.splice(index, 1)
-    return deletedUser[0]
+// Função para criar um novo usuário.
+export const createUser = async (data) => {
+  try {
+    // Validar campos obrigatórios e formato do e-mail
+    if (!data.email || !data.email.includes("@")) {
+      return { error: "E-mail inválido, o e-mail deve seguir este modelo: nome@dominio.com" }
+    }
+    // Verificar se email já existe no banco
+    const [existingUsers] = await db.query(
+      'SELECT * FROM users WHERE email = ?',
+      [data.email]
+    );
+    // Se já existir um usuário com o mesmo email, retornar um erro
+    if (existingUsers.length > 0) {
+      return { error: "E-mail já cadastrado em outro usuário" }
+    }
+    // Inserir (INSERT) novo usuário no Banco de Dados. O ? para parametrização e evitar SQL Injection.
+    const [result] = await db.query(
+      'INSERT INTO users (name, email, ativo, created_at) VALUES (?, ?, ?)',
+      [
+        data.name,
+        data.email,
+        true,
+        data.created_at
+      ]
+    );
+    // BUSCAR DO BANCO E RETORNAR (não montar manualmente) o usuário criado, incluindo o ID gerado pelo banco de dados.
+    const [newUser] = await db.query(
+      'SELECT * FROM users WHERE id = ?',
+      [result.insertId]
+    );
+    return newUser[0]; // Retorna o usuário criado
+
+  } catch (error) {
+    console.error('Erro ao criar usuário:', error);
+    throw error;
   }
-  return { error: "Usuário não encontrado" }
-}
+};
+
+// Função para atualizar usuário existente.
+export const updateUser = async (id, data) => {
+  try {
+    // Verificar se usuário existe antes de atualizar
+    const [existingUsers] = await db.query(
+      'SELECT * FROM users WHERE id = ?',
+      [id]
+    );
+    if (existingUsers.length === 0) {
+      return { error: "Usuário não encontrado" };
+    }
+    // Validar e-mail se for fornecido no update
+    if (data.email && !data.email.includes("@")) {
+      return { error: "E-mail inválido, o e-mail deve seguir este modelo: nome@dominio.com" };
+    }
+    // Verificar se email já existe para outro usuário no banco de dados
+    if (data.email) {
+      const [usersWithEmail] = await db.query(
+        'SELECT * FROM users WHERE email = ? AND id != ?',
+        [data.email, id]
+      );
+      if (usersWithEmail.length > 0) {
+        return { error: "E-mail já cadastrado para outro usuário" };
+      }
+    }
+    // Só atualiza os campos que foram fornecidos (name, email).
+    const updates = [];
+    const params = [];
+
+    if (data.name) {
+      updates.push('name = ?');
+      params.push(data.name);
+    }
+    if (data.email) {
+      updates.push('email = ?');
+      params.push(data.email);
+    }
+    // Se nenhum campo for atualizado, retorna dados atuais do usuário sem fazer update
+    if (updates.length === 0) {
+      return { error: "Nenhum campo para atualizar" };
+    }
+    // Adicionar ID ao final dos parâmetros para a cláusula WHERE
+    params.push(id);
+    // Construir query de UPDATE dinamicamente com os campos a serem atualizados. O ? para parametrização e evitar SQL Injection.
+    const query = `UPDATE users SET ${updates.join(', ')} WHERE id = ?`;
+    await db.query(query, params);
+    // Retornar o usuário atualizado, buscando os dados atuais do banco de dados.
+    return { id, ...data };
+  } catch (error) {
+    console.error('Erro ao atualizar usuário:', error);
+    throw error;
+  }
+};
+
+// Função para deletar um usuário
+export const deleteUser = async (id) => {
+  try {
+    // Verificar se usuário existe antes de deletar
+    const [userToDelete] = await db.query(
+      'SELECT * FROM users WHERE id = ?',
+      [id]
+    );
+    // Se não existir, retornar erro
+    if (userToDelete.length === 0) {
+      return { error: "Usuário não encontrado" };
+    }
+    // Deletar usuário do banco de dados usando query DELETE. O ? para parametrização e evitar SQL Injection.
+    const [result] = await db.query(
+      'DELETE FROM users WHERE id = ?',
+      [id]
+    );
+    // Verificar se linha foi deletada (affectedRows > 0). Se não, retornar erro.
+    if (result.affectedRows === 0) {
+      return { error: "Erro ao deletar usuário" };
+    }
+    return userToDelete[0]; // Retorna o usuário deletado
+  } catch (error) {
+    console.error('Erro ao deletar usuário:', error);
+    throw error;
+  }
+};
+
+// Função para obter todas as tarefas de um usuário específico.
+export const getUserTasks = async (userId) => {
+  try {
+    // Verificar se usuário existe antes de buscar suas tarefas
+    const [user] = await db.query(
+      'SELECT * FROM users WHERE id = ?',
+      [userId]
+    );
+    if (user.length === 0) {
+      return { error: "Usuário não encontrado" };
+    }
+    // Buscar todas as tarefas do usuário
+    const [tasks] = await db.query(
+      'SELECT * FROM tasks WHERE user_id = ?',
+      [userId]
+    );
+    return tasks;
+  } catch (error) {
+    console.error('Erro ao buscar tarefas do usuário:', error);
+    throw error;
+  }
+};
 
 // Função que alterara o status do usuário entre ativo e inativo.
-export const toggleUserStatus = (id) => {
-  const index = users.findIndex(u => u.id === id)
-  
-  if (index === -1) {
-    return { error: "Utilizador não encontrado" }
+export const toggleUserStatus = async (id) => {
+  try {
+    const [users] = await db.query(
+      'SELECT * FROM users WHERE id = ?',
+      [id]
+    );
+    if (users.length === 0) {
+      return { error: "Usuário não encontrado" };
+    }
+    
+    const user = users[0];
+    const newStatus = !user.ativo;
+    await db.query(
+      'UPDATE users SET ativo = ? WHERE id = ?',
+      [newStatus, id]
+    );
+    // Retorna o usuário com o status atualizado
+    return { ...user, ativo: newStatus };
+  } catch (error) {
+    console.error('Erro ao alternar status do usuário:', error);
+    throw error;
   }
- 
-  // Alternar o status entre ativo e inativo
-  users[index].ativo = !users[index].ativo
-  return users[index]
-}
+};
 
 // Função para obter estatísticas dos usuários, incluindo total, ativos, inativos e percentagem de ativos.
-export const getUserStats = () => {
-  const total = users.length
-  const ativos = users.filter(u => u.ativo).length
-  const inativos = total - ativos
-  const percentagemAtivos = total > 0 ? ((ativos / total) * 100).toFixed(2) : 0
-  
-  return {
-    total,
-    ativos,
-    inativos,
-    percentagemAtivos: parseFloat(percentagemAtivos)// Convertendo para número para evitar string com 2 casas decimais
+export const getUserStats = async () => {
+  try {
+    const [users] = await db.query('SELECT * FROM users');
+    const total = users.length;
+    const ativos = users.filter(u => u.ativo).length;
+    const inativos = total - ativos;
+    const percentagemAtivos = total > 0 ? ((ativos / total) * 100).toFixed(2) : 0;
+    return {
+      total,
+      ativos,
+      inativos,
+      percentagemAtivos: parseFloat(percentagemAtivos) // Convertendo para número para evitar string com 2 casas decimais
+    };
+  } catch (error) {
+    console.error('Erro ao obter estatísticas de usuários:', error);
+    throw error;
   }
-}
+};
