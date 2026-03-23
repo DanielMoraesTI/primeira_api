@@ -18,6 +18,7 @@ https://github.com/DanielMoraesTI/primeira_api.git
 ### Pré-requisitos
 - Node.js instalado (versão 16 ou superior)
 - npm ou yarn
+- MySQL Server instalado (versão 5.7 ou superior)
 
 ### Passos para Instalar e Rodar
 
@@ -32,17 +33,30 @@ https://github.com/DanielMoraesTI/primeira_api.git
    npm install
    ```
 
-3. **Inicie o servidor:**
+3. **Configure o banco de dados MySQL:**
+   - Crie um banco de dados chamado `primeira_api`
+   - Execute as queries SQL para criar as tabelas
+   - Insira os dados de teste (veja as queries em SCHEMA_MYSQL.sql no seu computador local)
+
+4. **Configure as variáveis de ambiente** (arquivo `.env`):
+   ```env
+   DB_HOST=localhost
+   DB_USER=root
+   DB_PASSWORD=sua_senha
+   DB_NAME=primeira_api
+   DB_PORT=3306
+   PORT=3000
+   ```
+
+5. **Inicie o servidor:**
    ```bash
    npm start
    ```
 
-4. **Acesse a API:**
+6. **Acesse a API:**
    ```
    http://localhost:3000
    ```
-
-O servidor estará rodando na porta 3000 e exibirá mensagem de confirmação no console.
 
 ---
 
@@ -50,30 +64,35 @@ O servidor estará rodando na porta 3000 e exibirá mensagem de confirmação no
 
 ### Usuários (`/users`)
 - `GET /users` - Listar usuários (com filtro por nome e ordenação)
+- `GET /users?search=` - Buscar usuários por nome
+- `GET /users?sort=asc|desc` - Ordenar usuários
 - `POST /users` - Criar novo usuário
 - `PUT /users/:id` - Atualizar usuário
+- `PATCH /users/:id` - Atualizar parcialmente usuário
 - `DELETE /users/:id` - Deletar usuário
 - `GET /users/stats` - Estatísticas de usuários
-- `PATCH /users/:id/toggle` - Ativar/Desativar usuário
+- `GET /users/:id/tasks` - Obter tarefas de um usuário
 
 ### Tarefas (`/tasks`)
 - `GET /tasks` - Listar tarefas
+- `GET /tasks?search=` - Buscar tarefas por título
+- `GET /tasks?sort=asc|desc` - Ordenar tarefas
 - `POST /tasks` - Criar tarefa
 - `PUT /tasks/:id` - Atualizar tarefa
 - `DELETE /tasks/:id` - Deletar tarefa
 - `GET /tasks/stats` - Estatísticas de tarefas
 - `GET /tasks/:id/comments` - Obter comentários da tarefa
-- `POST /tasks/:id/comments` - Adicionar comentário
+- `POST /tasks/:id/comments` - Adicionar comentário à tarefa
+- `PUT /tasks/:id/comments/:commentId` - Atualizar comentário
 - `DELETE /tasks/:id/comments/:commentId` - Remover comentário
-- `GET /tasks/:id/tags` - Obter tags associadas
-- `POST /tasks/:id/tags` - Associar tag
-- `DELETE /tasks/:id/tags/:tagId` - Remover associação de tag
+- `POST /tasks/:id/tags` - Associar tag à tarefa
+- `DELETE /tasks/:id/tags/:tagId` - Remover tag da tarefa
 
 ### Tags (`/tags`)
 - `GET /tags` - Listar tags
 - `POST /tags` - Criar tag
-- `PUT /tags/:id` - Atualizar tag
 - `DELETE /tags/:id` - Deletar tag
+- `GET /tags/:id/tasks` - Obter tarefas com a tag
 
 ---
 
@@ -86,43 +105,37 @@ O servidor estará rodando na porta 3000 e exibirá mensagem de confirmação no
 
 **Justificativa**: Essa separação promove código mais limpo, testável e fácil de manter. Cada camada tem uma responsabilidade única e bem definida.
 
-### 2. **Padronização de Respostas de Erro**
-- Todas as operações retornam objetos com propriedade `error` quando algo falha
-- Padrão: `{ error: "mensagem descritiva" }`
+### 2. **Padronização de Nomes de Tabelas em Inglês**
+- Todas as tabelas e queries utilizam nomenclatura em inglês: `users`, `tasks`, `tags`, `comments`
+- Evita inconsistências entre diferentes bancos de dados
 
-**Justificativa**: Garante consistência na tratamento de erros pelos clientes da API, facilitando a integração e previsibilidade do comportamento.
+**Justificativa**: Padroniza o código para contextos internacionais e facilita manutenção em equipes multilíngues.
 
 ### 3. **Sistema Único de Comentários**
 - Comentários são gerenciados exclusivamente pelo `commentService.js`
-- Remover duplicação que existia entre `taskService` e `commentService`
+- Todas as operações de comentários passam por um único ponto de controle
 
-**Justificativa**: Elimina conflitos de lógica e garante que todas as operações de comentários passem por um único ponto de controle.
+**Justificativa**: Elimina conflitos de lógica e garante consistência nas operações de comentários.
 
-### 4. **Status HTTP Padronizados**
+### 4. **Relacionamento N:N Entre Tarefas e Tags**
+- Tabela `task_tags` gerencia a relação entre tarefas e tags
+- Implementadas funções: `getTaskTags()`, `addTagToTask()`, `removeTagFromTask()`
+
+**Justificativa**: Permite que uma tarefa tenha múltiplas tags e vice-versa, com integridade referencial garantida.
+
+### 5. **Padronização de Respostas HTTP**
 - `201 Created` - Recurso criado com sucesso
 - `400 Bad Request` - Erro de validação
 - `404 Not Found` - Recurso não encontrado
 - `200 OK` - Operação bem-sucedida
 
-**Justificativa**: Segue os padrões RESTful, facilitando a integração com ferramentas de teste (Postman, Insomnia, etc.) e bibliotecas HTTP.
+**Justificativa**: Segue padrões RESTful, facilitando integração com ferramentas e bibliotecas HTTP.
 
-### 5. **Middlewares de Validação**
+### 6. **Middlewares de Validação**
 - `checkUserExists`: Verifica se usuário existe antes de operações PUT, PATCH e DELETE
 - `loggerMiddleware`: Registra todas as requisições recebidas
 
-**Justificativa**: Middlewares reduzem código duplicado nos controllers e centralizam lógica transversal de validação.
-
-### 6. **Nomenclatura Consistente**
-- Todas as funções de listagem começam com `getAll*` (ex: `getAllUsers`, `getAllTasks`)
-- Padrão aplicado em controllers, services e arquivos
-
-**Justificativa**: Melhora legibilidade e previsibilidade do código, facilitando onboarding de novos desenvolvedores.
-
-### 7. **Geração Automática de IDs**
-- IDs são gerados automaticamente com base no maior ID existente
-- Incremento baseado em `Math.max(...ids) + 1`
-
-**Justificativa**: Garante IDs únicos sem necessidade de banco de dados externo, apropriado para uma aplicação educacional.
+**Justificativa**: Reduz código duplicado e centraliza lógica transversal.
 
 ---
 
@@ -132,6 +145,7 @@ O servidor estará rodando na porta 3000 e exibirá mensagem de confirmação no
 Primeira_API/
 ├── src/
 │   ├── app.js                      # Servidor Express principal
+│   ├── db.js                       # Pool de conexão MySQL
 │   ├── controllers/
 │   │   ├── userController.js       # Lógica de API de usuários
 │   │   ├── taskController.js       # Lógica de API de tarefas
@@ -146,43 +160,62 @@ Primeira_API/
 │   │   ├── taskRoutes.js           # Endpoints de tarefas
 │   │   └── tagRoutes.js            # Endpoints de tags
 │   └── middlewares/
-│       ├── checkUserExists.js      # Validação de existência do usuário
-│       └── loggerMiddleware.js     # Log de requisições HTTP
+│       ├── checkUserExists.js      # Validação de usuário
+│       └── loggerMiddleware.js     # Log de requisições
 ├── package.json
+├── .env                            # Variáveis de ambiente
 └── README.md
 ```
 
-## ✨ Características
+---
 
-- ✅ Validação de dados (email, duplicação, campos obrigatórios)
-- ✅ Tratamento de erros padronizado e consistente
-- ✅ Busca e ordenação de dados
-- ✅ Relacionamentos entre recursos (Tarefas ↔ Tags ↔ Comentários)
-- ✅ Middleware de logging de requisições
-- ✅ Geração automática de IDs únicos
+## 📝 Exemplos Rápidos
 
-## 📝 Exemplo de Uso
-
-**Criar usuário:**
+### Listar Usuários
 ```bash
-POST http://localhost:3000/users
+GET http://localhost:3000/users
+```
+
+### Criar Tarefa
+```bash
+POST http://localhost:3000/tasks
 Content-Type: application/json
 
 {
-  "name": "João Silva",
-  "email": "joao@gmail.com"
+  "title": "Nova tarefa",
+  "categoria": "Trabalho",
+  "user_id": 1
 }
 ```
 
-**Resposta:**
-```json
+### Adicionar Comentário em Tarefa
+```bash
+POST http://localhost:3000/tasks/1/comments
+Content-Type: application/json
+
 {
-  "id": 8,
-  "name": "João Silva",
-  "email": "joao@gmail.com",
-  "ativo": true
+  "userId": 2,
+  "conteudo": "Comentário sobre a tarefa"
 }
 ```
+
+### Associar Tag a Tarefa
+```bash
+POST http://localhost:3000/tasks/1/tags
+Content-Type: application/json
+
+{
+  "tagId": 3
+}
+```
+
+### Obter Estatísticas
+```bash
+GET http://localhost:3000/users/stats
+GET http://localhost:3000/tasks/stats
+```
+
+---
 
 ## 📚 Conceitos Utilizados
 
@@ -191,6 +224,8 @@ Content-Type: application/json
 - **Middlewares** - Processamento de requisições
 - **HTTP Status Codes** - 200, 201, 400, 404, etc
 - **JSON** - Formato de dados
+- **MySQL** - Banco de dados relacional
+- **Relacionamentos** - 1:N (tarefas → usuários) e N:N (tarefas ↔ tags)
 
 ---
 
