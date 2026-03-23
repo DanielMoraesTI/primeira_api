@@ -50,30 +50,35 @@ O servidor estará rodando na porta 3000 e exibirá mensagem de confirmação no
 
 ### Usuários (`/users`)
 - `GET /users` - Listar usuários (com filtro por nome e ordenação)
+- `GET /users?search=` - Buscar usuários por nome
+- `GET /users?sort=asc|desc` - Ordenar usuários
 - `POST /users` - Criar novo usuário
 - `PUT /users/:id` - Atualizar usuário
+- `PATCH /users/:id` - Atualizar parcialmente usuário
 - `DELETE /users/:id` - Deletar usuário
 - `GET /users/stats` - Estatísticas de usuários
-- `PATCH /users/:id/toggle` - Ativar/Desativar usuário
+- `GET /users/:id/tasks` - Obter tarefas de um usuário
 
 ### Tarefas (`/tasks`)
 - `GET /tasks` - Listar tarefas
+- `GET /tasks?search=` - Buscar tarefas por título
+- `GET /tasks?sort=asc|desc` - Ordenar tarefas
 - `POST /tasks` - Criar tarefa
 - `PUT /tasks/:id` - Atualizar tarefa
 - `DELETE /tasks/:id` - Deletar tarefa
 - `GET /tasks/stats` - Estatísticas de tarefas
 - `GET /tasks/:id/comments` - Obter comentários da tarefa
-- `POST /tasks/:id/comments` - Adicionar comentário
+- `POST /tasks/:id/comments` - Adicionar comentário à tarefa
+- `PUT /tasks/:id/comments/:commentId` - Atualizar comentário
 - `DELETE /tasks/:id/comments/:commentId` - Remover comentário
-- `GET /tasks/:id/tags` - Obter tags associadas
-- `POST /tasks/:id/tags` - Associar tag
-- `DELETE /tasks/:id/tags/:tagId` - Remover associação de tag
+- `POST /tasks/:id/tags` - Associar tag à tarefa
+- `DELETE /tasks/:id/tags/:tagId` - Remover tag da tarefa
 
 ### Tags (`/tags`)
 - `GET /tags` - Listar tags
 - `POST /tags` - Criar tag
-- `PUT /tags/:id` - Atualizar tag
 - `DELETE /tags/:id` - Deletar tag
+- `GET /tags/:id/tasks` - Obter tarefas com a tag
 
 ---
 
@@ -86,43 +91,70 @@ O servidor estará rodando na porta 3000 e exibirá mensagem de confirmação no
 
 **Justificativa**: Essa separação promove código mais limpo, testável e fácil de manter. Cada camada tem uma responsabilidade única e bem definida.
 
-### 2. **Padronização de Respostas de Erro**
-- Todas as operações retornam objetos com propriedade `error` quando algo falha
-- Padrão: `{ error: "mensagem descritiva" }`
+### 2. **Padronização de Nomes de Tabelas em Inglês**
+- Todas as tabelas e queries utilizam nomenclatura em inglês: `users`, `tasks`, `tags`, `comments`
+- Evita inconsistências entre diferentes bancos de dados
 
-**Justificativa**: Garante consistência na tratamento de erros pelos clientes da API, facilitando a integração e previsibilidade do comportamento.
+**Justificativa**: Padroniza o código para contextos internacionais e facilita manutenção em equipes multilíngues.
 
 ### 3. **Sistema Único de Comentários**
 - Comentários são gerenciados exclusivamente pelo `commentService.js`
-- Remover duplicação que existia entre `taskService` e `commentService`
+- Todas as operações de comentários passam por um único ponto de controle
 
-**Justificativa**: Elimina conflitos de lógica e garante que todas as operações de comentários passem por um único ponto de controle.
+**Justificativa**: Elimina conflitos de lógica e garante consistência nas operações de comentários.
 
-### 4. **Status HTTP Padronizados**
+### 4. **Relacionamento N:N Entre Tarefas e Tags**
+- Tabela `task_tags` gerencia a relação entre tarefas e tags
+- Implementadas funções: `getTaskTags()`, `addTagToTask()`, `removeTagFromTask()`
+
+**Justificativa**: Permite que uma tarefa tenha múltiplas tags e vice-versa, com integridade referencial garantida.
+
+### 5. **Padronização de Respostas HTTP**
 - `201 Created` - Recurso criado com sucesso
 - `400 Bad Request` - Erro de validação
 - `404 Not Found` - Recurso não encontrado
 - `200 OK` - Operação bem-sucedida
 
-**Justificativa**: Segue os padrões RESTful, facilitando a integração com ferramentas de teste (Postman, Insomnia, etc.) e bibliotecas HTTP.
+**Justificativa**: Segue padrões RESTful, facilitando integração com ferramentas e bibliotecas HTTP.
 
-### 5. **Middlewares de Validação**
+### 6. **Middlewares de Validação**
 - `checkUserExists`: Verifica se usuário existe antes de operações PUT, PATCH e DELETE
 - `loggerMiddleware`: Registra todas as requisições recebidas
 
-**Justificativa**: Middlewares reduzem código duplicado nos controllers e centralizam lógica transversal de validação.
+**Justificativa**: Reduz código duplicado e centraliza lógica transversal.
 
-### 6. **Nomenclatura Consistente**
-- Todas as funções de listagem começam com `getAll*` (ex: `getAllUsers`, `getAllTasks`)
-- Padrão aplicado em controllers, services e arquivos
+---
 
-**Justificativa**: Melhora legibilidade e previsibilidade do código, facilitando onboarding de novos desenvolvedores.
+## 📦 Alterações Recentes (Branch: Exercícios-de-Backend-—-Migração-para-MySQL---Exercícios-Guiados-5)
 
-### 7. **Geração Automática de IDs**
-- IDs são gerados automaticamente com base no maior ID existente
-- Incremento baseado em `Math.max(...ids) + 1`
+### ✅ Atualizações Implementadas
 
-**Justificativa**: Garante IDs únicos sem necessidade de banco de dados externo, apropriado para uma aplicação educacional.
+1. **Padronização de Nomenclatura**
+   - `tarefas` → `tasks`
+   - `usuarios` → `users`
+   - Mantém consistência em todo o projeto
+
+2. **Implementação de Funções de Tags em Tarefas**
+   - `getTaskTags(taskId)` - Obtém tags associadas a uma tarefa
+   - `addTagToTask(taskId, tagId)` - Associa uma tag a uma tarefa
+   - `removeTagFromTask(taskId, tagId)` - Remove uma tag de uma tarefa
+
+3. **Alinhamento com Especificações do Projeto**
+
+4. **Validações Aprimoradas**
+   - Verificação de duplicação em associações tag-tarefa
+   - Validação de existência de recursos antes de operações
+   - Mensagens de erro consistentes e descritivas
+
+### 🔄 Como Usar a Nova Branch
+
+```bash
+git checkout refactor/mysql-standardization
+npm install
+npm start
+```
+
+---
 
 ---
 
