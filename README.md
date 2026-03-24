@@ -36,7 +36,7 @@ https://github.com/DanielMoraesTI/primeira_api.git
 3. **Configure o banco de dados MySQL:**
    - Crie um banco de dados chamado `primeira_api`
    - Execute as queries SQL para criar as tabelas
-   - Insira os dados de teste (veja as queries em SCHEMA_MYSQL.sql no seu computador local)
+   - Insira os dados de teste (veja as queries em mysql_schema.sql no seu computador local)
 
 4. **Configure as variáveis de ambiente** (arquivo `.env`):
    ```env
@@ -86,7 +86,6 @@ https://github.com/DanielMoraesTI/primeira_api.git
 - `PUT /tasks/:id/comments/:commentId` - Atualizar comentário
 - `DELETE /tasks/:id/comments/:commentId` - Remover comentário
 - `POST /tasks/:id/tags` - Associar tag à tarefa
-- `DELETE /tasks/:id/tags/:tagId` - Remover tag da tarefa
 
 ### Tags (`/tags`)
 - `GET /tags` - Listar tags
@@ -119,7 +118,7 @@ https://github.com/DanielMoraesTI/primeira_api.git
 
 ### 4. **Relacionamento N:N Entre Tarefas e Tags**
 - Tabela `task_tags` gerencia a relação entre tarefas e tags
-- Implementadas funções: `getTaskTags()`, `addTagToTask()`, `removeTagFromTask()`
+- Implementadas funções: `getTaskTags()`, `addTagToTask()`
 
 **Justificativa**: Permite que uma tarefa tenha múltiplas tags e vice-versa, com integridade referencial garantida.
 
