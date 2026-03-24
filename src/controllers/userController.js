@@ -5,10 +5,25 @@ export const getAllUsers = async (req, res) => {
   try {
     const { search = '', sort = '' } = req.query;
     // O await é para aguardar resposta do service, que pode ser uma operação assíncrona (ex: consulta a banco de dados)
-     const users = await userService.getAllUsers({ search, sort });
+     const users = await userService.getAllUsers(search, sort);
     res.json(users);
   } catch (error) {
+    console.error('Erro no controlador:', error);
     res.status(500).json({ error: 'Erro ao buscar usuários' });
+  }
+};
+
+export const getUserById = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const user = await userService.getUserById(id);
+    if (!user) {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+    res.json(user);
+  } catch (error) {
+    console.error('Erro ao buscar usuário por ID:', error);
+    res.status(500).json({ error: 'Erro ao buscar usuário' });
   }
 };
 

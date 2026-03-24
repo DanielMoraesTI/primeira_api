@@ -40,16 +40,7 @@ export const createComment = async (taskId, userId, commentData) => {
     throw error;
   }
 };
-// Função para obter todos os comentários. Retorna a lista completa de comentários.
-export const getAllComments = async () => {
-  try {
-    const [comments] = await db.query('SELECT * FROM comments');
-    return comments;
-  } catch (error) {
-    console.error('Erro ao obter comentários:', error);
-    throw error;
-  }
-};
+
 // Função para obter os comentários em uma tarefa específica. Verifica se a tarefa existe antes de retornar os comentários ou um erro se não encontrada.
 export const getCommentsByTask = async (taskId) => {
   try {

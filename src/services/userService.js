@@ -31,7 +31,7 @@ export const getUserById = async (id) => {
       'SELECT * FROM users WHERE id = ?',
       [id]
     );
-    return users;
+    return users[0];
 };
 
 // Função para criar um novo usuário.
@@ -52,12 +52,11 @@ export const createUser = async (data) => {
     }
     // Inserir (INSERT) novo usuário no Banco de Dados. O ? para parametrização e evitar SQL Injection.
     const [result] = await db.query(
-      'INSERT INTO users (name, email, ativo, created_at) VALUES (?, ?, ?)',
+      'INSERT INTO users (name, email, ativo) VALUES (?, ?, ?)',
       [
         data.name,
         data.email,
-        true,
-        data.created_at
+        true
       ]
     );
     // BUSCAR DO BANCO E RETORNAR (não montar manualmente) o usuário criado, incluindo o ID gerado pelo banco de dados.
@@ -65,7 +64,7 @@ export const createUser = async (data) => {
       'SELECT * FROM users WHERE id = ?',
       [result.insertId]
     );
-    return newUser[0]; // Retorna o usuário criado
+    return newUser[0];
 
   } catch (error) {
     console.error('Erro ao criar usuário:', error);
@@ -120,7 +119,8 @@ export const updateUser = async (id, data) => {
     const query = `UPDATE users SET ${updates.join(', ')} WHERE id = ?`;
     await db.query(query, params);
     // Retornar o usuário atualizado, buscando os dados atuais do banco de dados.
-    return { id, ...data };
+    const [updatedUser] = await db.query('SELECT * FROM users WHERE id = ?', [id]);
+    return updatedUser[0];
   } catch (error) {
     console.error('Erro ao atualizar usuário:', error);
     throw error;
@@ -148,7 +148,7 @@ export const deleteUser = async (id) => {
     if (result.affectedRows === 0) {
       return { error: "Erro ao deletar usuário" };
     }
-    return userToDelete[0]; // Retorna o usuário deletado
+    return userToDelete[0];
   } catch (error) {
     console.error('Erro ao deletar usuário:', error);
     throw error;

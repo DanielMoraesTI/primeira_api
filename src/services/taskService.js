@@ -26,6 +26,20 @@ export const getAllTasks = async (search = '', sort = '') => {
   }
 };
 
+// Função para obter uma tarefa por ID.
+export const getTaskById = async (id) => {
+  try {
+    const [tasks] = await db.query(
+      'SELECT * FROM tasks WHERE id = ?',
+      [id]
+    );
+    return tasks[0];
+  } catch (error) {
+    console.error('Erro ao buscar tarefa:', error);
+    throw error;
+  }
+};
+
 // Função para criar uma nova tarefa. A tarefa é criada com os dados fornecidos e valores padrão para campos opcionais (categoria e responsavelNome).
 export const createTask = async (data) => {
   try {
@@ -78,7 +92,7 @@ export const createTask = async (data) => {
       [result.insertId]
     );
 
-    return newTask[0]; // Retorna a tarefa criada
+    return newTask[0];
   
   } catch (error) {
     console.error('Erro ao criar tarefa:', error);
@@ -214,7 +228,7 @@ export const deleteTask = async (id) => {
     if (result.affectedRows === 0) {
       return { error: "Erro ao deletar tarefa" }
     }
-    return taskToDelete[0]; // Retorna a tarefa deletada
+    return taskToDelete[0];
   } catch (error) {
     console.error('Erro ao deletar tarefa:', error);
     throw error;
@@ -314,55 +328,5 @@ export const addTagToTask = async (taskId, tagId) => {
   }
 };
 
-// Função para remover uma tag de uma tarefa.
-export const removeTagFromTask = async (taskId, tagId) => {
-  try {
-    // Verificar se a tarefa existe
-    const [task] = await db.query(
-      'SELECT * FROM tasks WHERE id = ?',
-      [taskId]
-    );
-    if (task.length === 0) {
-      return { error: "Tarefa não encontrada" };
-    }
-    
-    // Verificar se a tag existe
-    const [tag] = await db.query(
-      'SELECT * FROM tags WHERE id = ?',
-      [tagId]
-    );
-    if (tag.length === 0) {
-      return { error: "Tag não encontrada" };
-    }
-    
-    // Verificar se a associação existe
-    const [association] = await db.query(
-      'SELECT * FROM task_tags WHERE task_id = ? AND tag_id = ?',
-      [taskId, tagId]
-    );
-    if (association.length === 0) {
-      return { error: "Esta tag não está associada à tarefa" };
-    }
-    
-    // Remover associação da tabela task_tags
-    const [result] = await db.query(
-      'DELETE FROM task_tags WHERE task_id = ? AND tag_id = ?',
-      [taskId, tagId]
-    );
-    
-    if (result.affectedRows === 0) {
-      return { error: "Erro ao remover tag da tarefa" };
-    }
-    
-    return { 
-      message: "Tag removida da tarefa com sucesso",
-      taskId,
-      tagId,
-      tag: tag[0]
-    };
-  } catch (error) {
-    console.error('Erro ao remover tag da tarefa:', error);
-    throw error;
-  }
-};
+
 

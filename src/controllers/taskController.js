@@ -6,10 +6,25 @@ export const getAllTasks = async (req, res) => {
   try {
     const { search = '', sort = '' } = req.query;
     // O await é para aguardar resposta do service, que pode ser uma operação assíncrona (ex: consulta a banco de dados)
-    const tasks = await taskService.getAllTasks({ search, sort });
+    const tasks = await taskService.getAllTasks(search, sort);
     res.json(tasks);
   } catch (error) {
+    console.error('Erro ao buscar tarefas:', error);
     res.status(500).json({ error: 'Erro ao buscar tarefas' });
+  }
+};
+
+export const getTaskById = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const task = await taskService.getTaskById(id);
+    if (!task) {
+      return res.status(404).json({ error: 'Tarefa não encontrada' });
+    }
+    res.json(task);
+  } catch (error) {
+    console.error('Erro ao buscar tarefa por ID:', error);
+    res.status(500).json({ error: 'Erro ao buscar tarefa' });
   }
 };
 
@@ -149,7 +164,7 @@ export const getTaskTags = async (req, res) => {
 export const addTagToTask = async (req, res) => {
   try {
     const taskId = parseInt(req.params.id);
-    const tagId = parseInt(req.params.tagId);
+    const tagId = parseInt(req.body.tagId);
     const result = await taskService.addTagToTask(taskId, tagId);
     if (result.error) {
       return res.status(404).json(result);
@@ -160,18 +175,3 @@ export const addTagToTask = async (req, res) => {
   }
 };
 
-export const removeTagFromTask = async (req, res) => {
-  try {
-    const taskId = parseInt(req.params.id);
-    const tagId = parseInt(req.params.tagId);
-
-    const result = await taskService.removeTagFromTask(taskId, tagId);
-
-    if (result.error) {
-      return res.status(404).json(result);
-    }
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ error: 'Erro ao remover tag da tarefa' });
-  }
-};
