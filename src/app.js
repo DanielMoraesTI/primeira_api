@@ -2,19 +2,27 @@
 import dotenv from 'dotenv';
 import path from 'path';
 
-import cors from 'cors';
 import express from 'express';
+import cors from 'cors';
+
+const app = express();
+
+// Configurar CORS
+app.use(cors({
+    origin: ['http://localhost:5500', 'http://127.0.0.1:5500'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    credentials: true,
+    optionsSuccessStatus: 200
+}));
+
+app.use(express.json());
+
 import userRoute from './routes/userRoutes.js';
 import taskRoutes from './routes/taskRoutes.js';
 import tagRoutes from './routes/tagRoutes.js';
 import logger from './middlewares/loggerMiddleware.js';
-const app = express();
 
-app.use(express.json());
 app.use(logger);
-app.use(cors({
-  origin: 'http://localhost:5500',
-}));
 
 app.use('/tasks', taskRoutes);
 app.use('/users', userRoute);

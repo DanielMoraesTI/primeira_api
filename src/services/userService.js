@@ -52,10 +52,11 @@ export const createUser = async (data) => {
     }
     // Inserir (INSERT) novo usuário no Banco de Dados. O ? para parametrização e evitar SQL Injection.
     const [result] = await db.query(
-      'INSERT INTO users (name, email, ativo) VALUES (?, ?, ?)',
+      'INSERT INTO users (name, email, role, ativo) VALUES (?, ?, ?, ?)',
       [
         data.name,
         data.email,
+        data.role || 'USER',
         true
       ]
     );
@@ -97,7 +98,7 @@ export const updateUser = async (id, data) => {
         return { error: "E-mail já cadastrado para outro usuário" };
       }
     }
-    // Só atualiza os campos que foram fornecidos (name, email).
+    // Só atualiza os campos que foram fornecidos (name, email, role).
     const updates = [];
     const params = [];
 
@@ -108,6 +109,10 @@ export const updateUser = async (id, data) => {
     if (data.email) {
       updates.push('email = ?');
       params.push(data.email);
+    }
+    if (data.role) {
+      updates.push('role = ?');
+      params.push(data.role);
     }
     // Se nenhum campo for atualizado, retorna dados atuais do usuário sem fazer update
     if (updates.length === 0) {
