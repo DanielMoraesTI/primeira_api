@@ -1,10 +1,77 @@
 import { db } from '../db.js';
 
-// Função para obter todas as TAGS. Retorna a lista completa de tags.
+// Função para obter uma TAG por ID com suas tarefas associadas.
+export const getTagById = async (id) => {
+  try {
+    const [tags] = await db.query(`
+      SELECT 
+        tg.*,
+        COALESCE(
+          JSON_ARRAYAGG(
+            JSON_OBJECT(
+              'id', t.id,
+              'title', t.title,
+              'categoria', t.categoria,
+              'concluida', t.concluida
+            )
+          ),
+          JSON_ARRAY()
+        ) as tarefas
+      FROM tags tg
+      LEFT JOIN task_tags tt ON tg.id = tt.tag_id
+      LEFT JOIN tasks t ON tt.task_id = t.id
+      WHERE tg.id = ?
+      GROUP BY tg.id
+    `, [id]);
+    
+    if (tags.length === 0) {
+      return null;
+    }
+    
+    const tag = tags[0];
+    // Processar tarefas se for string
+    if (typeof tag.tarefas === 'string') {
+      tag.tarefas = JSON.parse(tag.tarefas);
+    }
+    return tag;
+  } catch (error) {
+    console.error('Erro ao obter TAG por ID:', error);
+    throw error;
+  }
+};
+
+// Função para obter todas as TAGS com suas tarefas associadas. Retorna a lista completa de tags.
 export const getAllTags = async () => {
   try {
-    const [tags] = await db.query('SELECT * FROM tags');
-    return tags;
+    const [tags] = await db.query(`
+      SELECT 
+        tg.*,
+        COALESCE(
+          JSON_ARRAYAGG(
+            JSON_OBJECT(
+              'id', t.id,
+              'title', t.title,
+              'categoria', t.categoria,
+              'concluida', t.concluida
+            )
+          ),
+          JSON_ARRAY()
+        ) as tarefas
+      FROM tags tg
+      LEFT JOIN task_tags tt ON tg.id = tt.tag_id
+      LEFT JOIN tasks t ON tt.task_id = t.id
+      GROUP BY tg.id
+    `);
+    
+    // Processar cada tag para garantir que tarefas é sempre um array
+    const processedTags = tags.map(tag => {
+      if (typeof tag.tarefas === 'string') {
+        tag.tarefas = JSON.parse(tag.tarefas);
+      }
+      return tag;
+    });
+    
+    return processedTags;
   } catch (error) {
     console.error('Erro ao obter TAGs:', error);
     throw error;
@@ -62,16 +129,8 @@ export const updateTag = async (id, data) => {
     if (tagsWithName.length > 0) {
       return { error: "O Nome da TAG já existe para outra TAG" };
     }
-    await db.query(
-      'UPDATE tags SET name = ? WHERE id = ?',
-      [data.name, id]
-    );
-    // Retorna a TAG atualizada
-    const [updatedTag] = await db.query(
-      'SELECT * FROM tags WHERE id = ?',
-      [id]
-    );
-    return updatedTag[0];
+    // Retorna a TAG atualizada com suas tarefas
+    return await getTagById(id);
     
   } catch (error) {
     console.error('Erro ao atualizar TAG:', error);
@@ -97,6 +156,31 @@ export const getTasksByTag = async (tagId) => {
     return tasks;
   } catch (error) {
     console.error('Erro ao buscar tarefas da tag:', error);
+    throw error;
+  }
+};
+
+// Função para obter todas as tags associadas a uma tarefa específica usando INNER JOIN.
+export const getTagsByTask = async (taskId) => {
+  try {
+    // Verificar se a tarefa existe antes de buscar tags
+    const [task] = await db.query(
+      'SELECT * FROM tasks WHERE id = ?',
+      [taskId]
+    );
+    if (task.length === 0) {
+      return { error: "Tarefa não encontrada" };
+    }
+    // Buscar todas as tags associadas à tarefa via tabela de junção task_tags usando INNER JOIN
+    const [tags] = await db.query(
+      `SELECT tg.* FROM tags tg
+       INNER JOIN task_tags tt ON tg.id = tt.tag_id
+       WHERE tt.task_id = ?`,
+      [taskId]
+    );
+    return tags;
+  } catch (error) {
+    console.error('Erro ao buscar tags da tarefa:', error);
     throw error;
   }
 };

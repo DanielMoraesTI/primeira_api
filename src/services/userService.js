@@ -1,25 +1,56 @@
 import { db } from '../db.js';
 
-// Função para obter todos os usuários.
+// Função para obter todos os usuários com suas tarefas associadas.
 export const getAllUsers = async (search = '', sort = '') => {
   try {
-    let query = 'SELECT * FROM users';
+    let query = `
+      SELECT 
+        u.*,
+        COALESCE(
+          JSON_ARRAYAGG(
+            JSON_OBJECT(
+              'id', t.id,
+              'title', t.title,
+              'categoria', t.categoria,
+              'concluida', t.concluida,
+              'responsavelNome', t.responsavelNome
+            )
+          ),
+          JSON_ARRAY()
+        ) as tarefas
+      FROM users u
+      LEFT JOIN tasks t ON u.id = t.user_id
+    `;
     const params = [];
 
     // Se houver busca, adicionar cláusula WHERE para filtrar por nome usando LIKE.
     if (search) {
-      query += ' WHERE name LIKE ?';
+      query += ' WHERE u.name LIKE ?';
       params.push(`%${search}%`);
     }
+    
+    // Agrupar por usuário para usar JSON_ARRAYAGG
+    query += ' GROUP BY u.id';
+    
     // Se houver ordenação, adicionar cláusula ORDER BY para ordenar por nome em ordem ascendente ou descendente.
     if (sort === 'asc') {
-      query += ' ORDER BY name ASC';
+      query += ' ORDER BY u.name ASC';
     } else if (sort === 'desc') {
-      query += ' ORDER BY name DESC';
+      query += ' ORDER BY u.name DESC';
     }
+    
     // Executar query no banco de dados usando db.query e retornar os usuários encontrados.
     const [users] = await db.query(query, params);
-    return users;
+    
+    // Processar cada usuário para garantir que tarefas é sempre um array
+    const processedUsers = users.map(user => {
+      if (typeof user.tarefas === 'string') {
+        user.tarefas = JSON.parse(user.tarefas);
+      }
+      return user;
+    });
+    
+    return processedUsers;
   } catch (error) {
     console.error('Erro ao buscar usuários:', error);
     throw error;
@@ -27,11 +58,42 @@ export const getAllUsers = async (search = '', sort = '') => {
 };
 
 export const getUserById = async (id) => {
-    const [users] = await db.query(
-      'SELECT * FROM users WHERE id = ?',
-      [id]
-    );
-    return users[0];
+    try {
+      const [users] = await db.query(`
+        SELECT 
+          u.*,
+          COALESCE(
+            JSON_ARRAYAGG(
+              JSON_OBJECT(
+                'id', t.id,
+                'title', t.title,
+                'categoria', t.categoria,
+                'concluida', t.concluida,
+                'responsavelNome', t.responsavelNome
+              )
+            ),
+            JSON_ARRAY()
+          ) as tarefas
+        FROM users u
+        LEFT JOIN tasks t ON u.id = t.user_id
+        WHERE u.id = ?
+        GROUP BY u.id
+      `, [id]);
+      
+      if (users.length === 0) {
+        return null;
+      }
+      
+      const user = users[0];
+      // Processar tarefas se for string
+      if (typeof user.tarefas === 'string') {
+        user.tarefas = JSON.parse(user.tarefas);
+      }
+      return user;
+    } catch (error) {
+      console.error('Erro ao buscar usuário por ID:', error);
+      throw error;
+    }
 };
 
 // Função para criar um novo usuário.

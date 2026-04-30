@@ -10,6 +10,19 @@ export const getAllTags = async (req, res) => {
   }
 };
 
+export const getTagById = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const tag = await tagService.getTagById(id);
+    if (!tag) {
+      return res.status(404).json({ error: 'TAG não encontrada' });
+    }
+    res.json(tag);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao buscar TAG' });
+  }
+};
+
 export const createTag = async (req, res) => {
   try {
     const { name } = req.body;
@@ -68,5 +81,18 @@ export const getTasksByTag = async (req, res) => {
     res.json(tasks);
   } catch (error) {
     res.status(500).json({ error: 'Erro ao buscar tarefas da tag' });
+  }
+};
+
+export const getTagsByTask = async (req, res) => {
+  try {
+    const taskId = parseInt(req.params.taskId);
+    const tags = await tagService.getTagsByTask(taskId);
+    if (tags.error) {
+      return res.status(404).json(tags);
+    }
+    res.json(tags);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao buscar tags da tarefa' });
   }
 };

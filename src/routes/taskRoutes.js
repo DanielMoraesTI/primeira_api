@@ -13,6 +13,7 @@ router.put('/:id/comments/:commentId', taskController.updateTaskComment);
 router.delete('/:id/comments/:commentId', taskController.deleteTaskComment);
 
 // TAGS
+router.get('/:id/tags', taskController.getTaskTags);
 router.post('/:id/tags', taskController.addTagToTask);
 
 // TAREFAS

@@ -1,39 +1,85 @@
 import { db } from '../db.js';
 
-// Função para obter todos a tarefas.
+// Função para obter todos a tarefas com suas tags associadas.
 export const getAllTasks = async (search = '', sort = '') => {
   try {
-    let query = 'SELECT * FROM tasks';
+    let query = `
+      SELECT 
+        t.*,
+        COALESCE(
+          JSON_ARRAYAGG(
+            JSON_OBJECT('id', tg.id, 'name', tg.name)
+          ), 
+          JSON_ARRAY()
+        ) as tags
+      FROM tasks t
+      LEFT JOIN task_tags tt ON t.id = tt.task_id
+      LEFT JOIN tags tg ON tt.tag_id = tg.id
+    `;
     const params = [];
+    
     // Se houver busca pelo título da tarefa, adicionar cláusula WHERE para filtrar usando LIKE.
     if (search) {
-      query += ' WHERE title LIKE ?';
+      query += ' WHERE t.title LIKE ?';
       params.push(`%${search}%`);
     }
+    
+    // Agrupar por tarefa para usar GROUP_CONCAT
+    query += ' GROUP BY t.id';
+    
     // Se houver ordenação, adicionar cláusula ORDER BY para ordenar por título em ordem ascendente ou descendente.
     if (sort === 'asc') {
-      query += ' ORDER BY title ASC';
+      query += ' ORDER BY t.title ASC';
     } else if (sort === 'desc') {
-      query += ' ORDER BY title DESC';
+      query += ' ORDER BY t.title DESC';
     }
-    // Executar query no MySQL usando db.query, passando a query e os parâmetros. O resultado é um array onde o primeiro elemento são as tarefas.
+    
+    // Executar query no MySQL usando db.query, passando a query e os parâmetros.
     const [tasks] = await db.query(query, params);
+    
+    // Processar cada tarefa para garantir que tags é sempre um array
+    const processedTasks = tasks.map(task => {
+      if (typeof task.tags === 'string') {
+        task.tags = JSON.parse(task.tags);
+      }
+      return task;
+    });
 
-    return tasks;
+    return processedTasks;
   } catch (error) {
     console.error('Erro ao buscar tarefas:', error);
     throw error;
   }
 };
 
-// Função para obter uma tarefa por ID.
+// Função para obter uma tarefa por ID com suas tags associadas.
 export const getTaskById = async (id) => {
   try {
     const [tasks] = await db.query(
-      'SELECT * FROM tasks WHERE id = ?',
+      `SELECT 
+        t.*,
+        COALESCE(
+          JSON_ARRAYAGG(
+            JSON_OBJECT('id', tg.id, 'name', tg.name)
+          ), 
+          JSON_ARRAY()
+        ) as tags
+      FROM tasks t
+      LEFT JOIN task_tags tt ON t.id = tt.task_id
+      LEFT JOIN tags tg ON tt.tag_id = tg.id
+      WHERE t.id = ?
+      GROUP BY t.id`,
       [id]
     );
-    return tasks[0];
+    if (tasks.length === 0) {
+      return null;
+    }
+    // Processar a resposta para garantir que tags é sempre um array
+    const task = tasks[0];
+    if (typeof task.tags === 'string') {
+      task.tags = JSON.parse(task.tags);
+    }
+    return task;
   } catch (error) {
     console.error('Erro ao buscar tarefa:', error);
     throw error;
